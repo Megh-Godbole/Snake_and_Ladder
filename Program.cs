@@ -1,64 +1,40 @@
 ﻿using System;
 using System.Collections.Generic;
+using Snake_and_Ladder.Engine;
+using Snake_and_Ladder.Helpers;
+using Snake_and_Ladder.Models;
 
 namespace Snake_and_Ladder
 {
+    /// <summary>
+    /// Entry point. Keeps Program.cs thin — only responsible for
+    /// bootstrapping the game (collecting setup input, wiring dependencies).
+    /// All game logic lives in <see cref="GameEngine"/>.
+    /// </summary>
     class Program
     {
-        public Dictionary<int, int> Snake = new Dictionary<int, int>()
-        {
-            {17, 7},{54, 34},{62, 19},{64, 60},{87, 24},{93, 73},{95, 75},{99, 78}
-        };
-        public Dictionary<int, int> ladder = new Dictionary<int, int>()
-        {
-            {4, 14},{9, 31},{20, 38},{28, 84},{40, 59},{51, 67},{63, 81},{71, 91}
-        };
-        public int rendice()
-        {
-            var rand = new Random();
-            int dice = rand.Next(1, 7);
-            return dice;
-        }
         static void Main(string[] args)
         {
-            Console.WriteLine("============= Snake And Ladder =============\n");
-            Console.WriteLine("Lets Start ???\n(Reply y For Yes)");
-            string UserRespo = Console.ReadLine();
-            int position = 0;
+            ConsoleHelper.PrintBanner();
 
-            while(position <= 100 && UserRespo == "y")
+            // ── Collect number of players ────────────────────────────────────
+            int playerCount = ConsoleHelper.AskInt("  How many players? (1–4): ", 1, 4);
+
+            // ── Collect player names ─────────────────────────────────────────
+            List<Player> players = new();
+            for (int i = 1; i <= playerCount; i++)
             {
-                Program a = new Program();
-                int rndval = a.rendice();
-                Console.WriteLine("Dice Value : " + rndval);
-                if (rndval == 6)
-                {
-                    position += rndval;
-                    Console.WriteLine("You Got 6 Roll Again");
-                    rndval = a.rendice();
-                    Console.WriteLine("Dice Value : " + rndval);
-                }
-                position += rndval;
-                if (a.ladder.ContainsKey(position))
-                {
-                    Console.WriteLine("You Got A ladder");
-                    position = a.ladder[position];
-                }
-                else if (a.Snake.ContainsKey(position))
-                {
-                    Console.WriteLine("You Got Eaten By The Snake");
-                    position = a.Snake[position];
-                }
-                Console.WriteLine("You Are On " + position + " Position.\n");
-
-                if(position<100)
-                {
-                    Console.WriteLine("Do You Want To Roll Again ??\n(If Yes Enter y & If No Enter n");
-                    UserRespo = Console.ReadLine();
-                }
-                else Console.WriteLine("Congratulations You Won !!!!!!");
+                string name = ConsoleHelper.AskPlayerName($"  Enter name for Player {i}: ");
+                players.Add(new Player(name));
             }
-            Console.WriteLine("Bye!!!!!");
+
+            Console.WriteLine();
+
+            // ── Start the game ───────────────────────────────────────────────
+            GameEngine game = new(players);
+            game.Run();
+
+            Console.WriteLine("\n  Thanks for playing! Bye 👋");
         }
     }
 }
