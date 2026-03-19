@@ -1,4 +1,14 @@
-﻿using System;
+// =============================================================================
+// File        : Program.cs
+// Project     : Snake and Ladder — Console Game
+// Author      : Megh Godbole (Ganesh)
+// Created     : March 18, 2026
+// Description : Application entry point. Collects player setup information
+//               and bootstraps the GameEngine. Intentionally kept thin —
+//               all game logic lives in GameEngine, not here.
+// =============================================================================
+
+using System;
 using System.Collections.Generic;
 using Snake_and_Ladder.Engine;
 using Snake_and_Ladder.Helpers;

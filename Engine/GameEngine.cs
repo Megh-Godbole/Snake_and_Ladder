@@ -1,3 +1,15 @@
+// =============================================================================
+// File        : Engine/GameEngine.cs
+// Project     : Snake and Ladder — Console Game
+// Author      : Megh Godbole (Ganesh)
+// Created     : March 18, 2026
+// Description : Core game loop. Orchestrates turn order, dice rolling,
+//               board position evaluation, and win detection for all players.
+//               Separated from Program.cs to keep the entry point thin and
+//               to make this class independently unit-testable without
+//               requiring a running console session.
+// =============================================================================
+
 using System;
 using System.Collections.Generic;
 using Snake_and_Ladder.Helpers;
@@ -13,10 +25,15 @@ namespace Snake_and_Ladder.Engine
     /// </summary>
     public class GameEngine
     {
-        private readonly Board _board;
-        private readonly Dice  _dice;
+        // ── Dependencies ─────────────────────────────────────────────────────
+        private readonly Board        _board;
+        private readonly Dice         _dice;
         private readonly List<Player> _players;
 
+        /// <summary>
+        /// Initializes the game engine with the given list of players.
+        /// Internally creates its own <see cref="Board"/> and <see cref="Dice"/> instances.
+        /// </summary>
         /// <param name="players">List of players participating in the game.</param>
         public GameEngine(List<Player> players)
         {
@@ -26,13 +43,14 @@ namespace Snake_and_Ladder.Engine
         }
 
         /// <summary>
-        /// Starts and runs the game until a player wins or all players quit.
+        /// Starts and runs the full game loop until a player wins or
+        /// any player chooses to quit on their turn.
         /// </summary>
         public void Run()
         {
             Console.WriteLine("  Game started! Good luck everyone.\n");
 
-            // Cycle through players in order, repeating until someone wins
+            // Cycle through all players repeatedly until the game ends
             while (true)
             {
                 foreach (Player player in _players)
@@ -40,6 +58,7 @@ namespace Snake_and_Ladder.Engine
                     ConsoleHelper.PrintDivider();
                     Console.WriteLine($"  🎲 {player.Name}'s turn  |  Position: {player.Position}");
 
+                    // Give the player the option to quit gracefully
                     if (!ConsoleHelper.AskYesNo("  Roll the dice?"))
                     {
                         Console.WriteLine($"\n  {player.Name} chose to quit. Bye!");
@@ -48,6 +67,7 @@ namespace Snake_and_Ladder.Engine
 
                     TakeTurn(player);
 
+                    // Check for win immediately after the turn ends
                     if (player.HasWon)
                     {
                         ConsoleHelper.PrintWinMessage(player.Name, player.TurnCount);
@@ -59,21 +79,27 @@ namespace Snake_and_Ladder.Engine
 
         /// <summary>
         /// Executes a single turn for the given player.
-        /// Handles the roll-again-on-6 rule and board evaluation after every roll.
+        /// Handles the standard roll, applies board effects, then handles
+        /// the bonus roll if a 6 was rolled — applying board effects again.
         /// </summary>
         /// <param name="player">The player whose turn it is.</param>
         private void TakeTurn(Player player)
         {
             player.TurnCount++;
 
+            // ── Primary roll ─────────────────────────────────────────────────
             int roll = _dice.Roll();
             Console.WriteLine($"\n  Rolled: {roll}");
 
-            // Move and evaluate — stop early if the player wins mid-turn
             player.Position = EvaluateMove(player.Position, roll);
+
+            // Stop early if the player wins on the primary roll
             if (player.HasWon) return;
 
-            // Standard Snake & Ladder rule: rolling a 6 earns a bonus roll
+            // ── Bonus roll on 6 ──────────────────────────────────────────────
+            // Standard rule: rolling a 6 earns a bonus roll.
+            // Both rolls count toward movement — evaluated separately so
+            // snakes and ladders are checked after each individual roll.
             if (roll == Dice.MaxValue)
             {
                 Console.WriteLine("  🎲 Rolled a 6! Bonus roll incoming...");
@@ -88,16 +114,18 @@ namespace Snake_and_Ladder.Engine
         }
 
         /// <summary>
-        /// Applies a dice roll to a position and resolves any board event (snake/ladder/overshoot).
+        /// Applies a dice roll to the player's current position,
+        /// evaluates the result on the board, and prints the outcome.
         /// </summary>
-        /// <param name="currentPosition">The player's position before the roll.</param>
-        /// <param name="roll">The dice value rolled.</param>
-        /// <returns>The resolved final position.</returns>
+        /// <param name="currentPosition">The player's position before this roll.</param>
+        /// <param name="roll">The dice value to apply.</param>
+        /// <returns>The resolved final position after board effects.</returns>
         private int EvaluateMove(int currentPosition, int roll)
         {
-            int rawPosition  = currentPosition + roll;
+            int rawPosition   = currentPosition + roll;
             int finalPosition = _board.Evaluate(rawPosition, out string boardEvent);
 
+            // Delegate all UI feedback to ConsoleHelper — keeps this method clean
             ConsoleHelper.PrintBoardEvent(boardEvent, rawPosition, finalPosition);
 
             return finalPosition;

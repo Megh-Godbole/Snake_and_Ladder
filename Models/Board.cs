@@ -1,3 +1,15 @@
+// =============================================================================
+// File        : Models/Board.cs
+// Project     : Snake and Ladder — Console Game
+// Author      : Megh Godbole (Ganesh)
+// Created     : March 18, 2026
+// Description : Represents the 100-square Snake and Ladder game board.
+//               Owns all snake and ladder position mappings and exposes
+//               a single Evaluate() method that resolves any raw position
+//               (after a dice roll) into a final board position, applying
+//               snake slides, ladder climbs, or overshoot bouncing as needed.
+// =============================================================================
+
 using System.Collections.Generic;
 
 namespace Snake_and_Ladder.Models
@@ -9,11 +21,9 @@ namespace Snake_and_Ladder.Models
     /// </summary>
     public class Board
     {
-        /// <summary>
-        /// The winning position on the board.
-        /// </summary>
+        /// <summary>The winning position on the board.</summary>
         public const int WinPosition = 100;
-        
+
         /// <summary>
         /// Maps snake head positions to their tail positions.
         /// Landing on a key slides the player down to the value.
@@ -35,36 +45,46 @@ namespace Snake_and_Ladder.Models
         };
 
         /// <summary>
-        /// Evaluates a position and applies any snake or ladder effect.
-        /// If the position exceeds <see cref="WinPosition"/>, it is clamped.
+        /// Evaluates a raw position after a dice roll and applies any board effects.
+        /// Handles overshoot (bounce back), snake slides, and ladder climbs.
         /// </summary>
-        /// <param name="position">The raw position after a dice roll.</param>
+        /// <param name="position">The raw position after adding the dice roll.</param>
         /// <param name="boardEvent">
-        /// Outputs a description of what happened:
-        /// "snake", "ladder", "win", or "none".
+        /// Outputs a string describing what happened:
+        /// <list type="bullet">
+        ///   <item><c>"snake"</c> — player slid down a snake</item>
+        ///   <item><c>"ladder"</c> — player climbed a ladder</item>
+        ///   <item><c>"overshoot"</c> — player exceeded 100 and bounced back</item>
+        ///   <item><c>"win"</c> — player landed exactly on 100</item>
+        ///   <item><c>"none"</c> — normal move with no special event</item>
+        /// </list>
         /// </param>
-        /// <returns>The final resolved position.</returns>
+        /// <returns>The final resolved board position.</returns>
         public int Evaluate(int position, out string boardEvent)
         {
-            // Overshoot — player must land exactly on 100 or stay put
+            // Overshoot rule — bounce back by the overflow amount
+            // e.g. position 98 + roll 5 = 103 → bounces to 97
             if (position > WinPosition)
             {
                 boardEvent = "overshoot";
-                return position - (position - WinPosition); // bounce back
+                return WinPosition - (position - WinPosition);
             }
 
+            // Check for snake at this position (slides player down)
             if (Snakes.TryGetValue(position, out int snakeTail))
             {
                 boardEvent = "snake";
                 return snakeTail;
             }
 
+            // Check for ladder at this position (climbs player up)
             if (Ladders.TryGetValue(position, out int ladderTop))
             {
                 boardEvent = "ladder";
                 return ladderTop;
             }
 
+            // No special event — return position as-is
             boardEvent = position == WinPosition ? "win" : "none";
             return position;
         }
